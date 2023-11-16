@@ -33,26 +33,47 @@ def getLatestVersionPaper(version: str):
             max = int(num)
     return max
 
+def getLatestMinecraftVersion():
+    req = requests.get(f"https://launchermeta.mojang.com/mc/game/version_manifest.json")
+    versions = req.json()["latest"]
+    return versions["release"]
+
+implemented = ["fabric", "paper", "vainilla", "spigot"]
+
 
 @app.get("/")
 def index():
-    return {"message": "It works!"}
+    return {}
 
-@app.get("/fabric/{version}")
-def fabric(version: str):
-    return fastapi.responses.RedirectResponse(f"https://maven.fabricmc.net/net/fabricmc/fabric-loader/{getLatestVersionFabric(version)}/fabric-loader-{getLatestVersionFabric(version)}.jar")
+@app.get("/api")
+def api():
+    return {"usage": {"/api/{type}/": "get latest release", "/api/{type}/{version}/": "get specific minecraft version", }, "types": implemented, "version": "minecraft versions"}
 
-@app.get("/paper/{version}")
-def paper(version: str):
-    return fastapi.responses.RedirectResponse(f"https://papermc.io/api/v2/projects/paper/versions/{version}/builds/{getLatestVersionPaper(version)}/downloads/paper-{version}-{getLatestVersionPaper(version)}.jar")
+@app.get("/api/{type}")
+def api(type: str):
+    if type == "fabric":
+        return fastapi.responses.RedirectResponse(f"https://maven.fabricmc.net/net/fabricmc/fabric-loader/{getLatestVersionFabric(getLatestMinecraftVersion())}/fabric-loader-{getLatestVersionFabric(getLatestMinecraftVersion())}.jar")
+    elif type == "paper":
+        return fastapi.responses.RedirectResponse(f"https://papermc.io/api/v2/projects/paper/versions/{getLatestMinecraftVersion()}/builds/{getLatestVersionPaper(getLatestMinecraftVersion())}/downloads/paper-{getLatestMinecraftVersion()}-{getLatestVersionPaper(getLatestMinecraftVersion())}.jar")
+    elif type == "vainilla":
+        return fastapi.responses.RedirectResponse(getLaterVersionVainilla(getLatestMinecraftVersion()))
+    elif type == "spigot":
+        return fastapi.responses.RedirectResponse(f"https://download.getbukkit.org/spigot/spigot-{getLatestMinecraftVersion()}.jar")
+    else:
+        return {"error": "type not found", "valid-types": implemented}
 
-@app.get("/vainilla/{version}")
-def vainilla(version: str):
-    return fastapi.responses.RedirectResponse(getLaterVersionVainilla(version))
-
-@app.get("/spigot/{version}")
-def spigot(version: str):
-    return fastapi.responses.RedirectResponse(f"https://download.getbukkit.org/spigot/spigot-{version}.jar")
+@app.get("/api/{type}/{version}")
+def api(type: str, version: str):
+    if type == "fabric":
+        return fastapi.responses.RedirectResponse(f"https://maven.fabricmc.net/net/fabricmc/fabric-loader/{getLatestVersionFabric(version)}/fabric-loader-{getLatestVersionFabric(version)}.jar")
+    elif type == "paper":
+        return fastapi.responses.RedirectResponse(f"https://papermc.io/api/v2/projects/paper/versions/{version}/builds/{getLatestVersionPaper(version)}/downloads/paper-{version}-{getLatestVersionPaper(version)}.jar")
+    elif type == "vainilla":
+        return fastapi.responses.RedirectResponse(getLaterVersionVainilla(version))
+    elif type == "spigot":
+        return fastapi.responses.RedirectResponse(f"https://download.getbukkit.org/spigot/spigot-{version}.jar")
+    else:
+        return {"error": "type not found", "valid-types": implemented}
 
 app.host("0.0.0.0", app, "Tetas")
 
